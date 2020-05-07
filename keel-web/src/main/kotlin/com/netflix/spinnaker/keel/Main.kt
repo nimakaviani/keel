@@ -18,6 +18,7 @@ package com.netflix.spinnaker.keel
 import com.netflix.spinnaker.config.PluginsAutoConfiguration
 import com.netflix.spinnaker.kork.PlatformComponents
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.annotation.Import
 import org.springframework.scheduling.annotation.EnableAsync
@@ -40,7 +41,8 @@ private val DEFAULT_PROPS = mapOf(
   scanBasePackages = [
     "com.netflix.spinnaker.config",
     "com.netflix.spinnaker.keel"
-  ]
+  ],
+  exclude = [DataSourceAutoConfiguration::class]
 )
 @Import(
   PlatformComponents::class,

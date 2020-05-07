@@ -76,7 +76,7 @@ class ExportController(
 
     return runBlocking {
       withTracingContext(exportable) {
-        log.info("Exporting resource ${exportable.toResourceId()}")
+        log.info(">>>> Exporting resource ${exportable.toResourceId()}")
         SubmittedResource(
           kind = kind,
           spec = handler.export(exportable)
