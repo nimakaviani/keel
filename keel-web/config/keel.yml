@@ -1,0 +1,136 @@
+eureka:
+  enabled: true
+keel:
+  plugins:
+    bakery:
+      enabled: false
+      baseImages:
+        bionic:
+          candidate: bionicbase-x86_64-201904232145-ebs
+          unstable: bionicbase-unstable-x86_64-201904252133-ebs
+          release: bionicbase-x86_64-201904041959-ebs
+        xenial:
+          candidate: xenialbase-x86_64-201904232145-ebs
+          unstable: xenialbase-unstable-x86_64-201904252133-ebs
+          release: xenialbase-x86_64-201904041959-ebs
+          previous: xenialbase-x86_64-201902202219-ebs
+    ec2:
+      enabled: true
+    deliveryConfig:
+      enabled: true
+    titus:
+      enabled: false
+  constraints:
+    manual-judgement:
+      interactive-notifications:
+        enabled: true
+echo:
+  baseUrl: https://echo-${netflix.stack}.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net
+igor:
+  enabled: true
+  baseUrl: https://igor-${netflix.stack}.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net
+orca:
+  enabled: true
+  baseUrl: https://orca-${netflix.stack}.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net
+clouddriver:
+  enabled: true
+  baseUrl: https://clouddriver-${netflix.stack}-readonly.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net
+front50:
+  enabled: true
+  baseUrl: https://front50-${netflix.stack}.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net
+services:
+  fiat:
+    enabled: true
+    legacyFallback: true
+    refreshable: false
+    baseUrl: https://fiat-${netflix.stack}.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net
+sql:
+  enabled: false
+  connectionPools:
+    default:
+      user: keel_service
+      connectionTimeout: 5000
+      maxLifetime: 30000
+      maxPoolSize: 50
+  migration:
+    user: keel_migrate
+okHttpClient:
+  # moved to spinnaker-common
+  #keyStore: /apps/keel/config/all-services-client.p12
+  #trustStore: /apps/keel/config/services-truststore.p12
+  propagateSpinnakerHeaders: true
+  connectTimeoutMs: 30000
+  readTimeoutMs: 59000
+  interceptor.skipHeaderCheck: true
+# logging:
+#   config: /apps/spinnaker/config/logback-defaults.xml
+default:
+  legacyServerPort: 7101
+server:
+  port: 7002
+  ssl:
+    enabled: false
+    clientAuth: need
+    crlFile: blacklist:/apps/spinnaker/config/sslblacklist
+---
+spring:
+  profiles: prod,mgmt
+retrofit2:
+  logLevel: BASIC
+---
+spring:
+  profiles: main
+clouddriver:
+  baseUrl: https://clouddriver-${netflix.stack}-readonly-keel.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net
+sql:
+  enabled: true
+  # sslParameters: sslMode=VERIFY_CA&trustCertificateKeyStoreUrl=file:/apps/spinnaker/config/rds-combined-ca-truststore&trustCertificateKeyStorePassword=changeit
+  baseUrl: keel-${netflix.stack}-sql.${EC2_REGION}.spinnaker.${netflix.account}.netflix.net:3306
+  connectionPools:
+    default:
+      jdbcUrl: jdbc:mysql://${sql.baseUrl}/keel?pool=true #&${sql.sslParameters}
+  migration:
+    jdbcUrl: jdbc:mysql://${sql.baseUrl}/keel #?${sql.sslParameters}
+---
+spring:
+  profiles: local
+keel:
+  resourceCheck:
+    minAgeDuration: 10s
+  artifact-refresh:
+    frequency: PT1M
+  constraints:
+    manual-judgement:
+      interactive-notifications:
+        enabled: true
+eureka:
+  enabled: false
+okHttpClient:
+  interceptor:
+    skipHeaderCheck: true
+sql:
+  enabled: true
+  connectionPools:
+    default:
+      jdbcUrl: jdbc:mysql://127.0.0.1:3306/keel?useSSL=false&serverTimezone=UTC
+      user: root
+      password: my-secret-pw
+  migration:
+    jdbcUrl: jdbc:mysql://127.0.0.1:3306/keel?useSSL=false&serverTimezone=UTC
+    user: root
+    password: my-secret-pw
+EC2_REGION: us-west-2
+NETFLIX_ENVIRONMENT: ${netflix.environment}
+retrofit2:
+  logLevel: BASIC
+#  logLevel: BODY
+default:
+  port: 8087
+  ssl:
+    enabled: false
+    keyStore: ${user.home}/.spinnaker/keystores/localhost.p12
+    keyStorePassword: changeit
+    trustStore: ${user.home}/.spinnaker/truststores/services-truststore.p12
+    trustStorePassword: changeit
+# logging:
+#   config: ${user.home}/.spinnaker/logback-defaults.xml

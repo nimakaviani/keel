@@ -119,6 +119,7 @@ class SecurityGroupHandler(
     }
 
   override suspend fun export(exportable: Exportable): SecurityGroupSpec {
+    log.info("!!!HELP-2!!!")
     val summaries = exportable.regions.associateWith { region ->
       try {
         cloudDriverCache.securityGroupByName(
@@ -126,17 +127,22 @@ class SecurityGroupHandler(
           region = region,
           name = exportable.moniker.toString()
         )
+      } catch (e: HttpException) {
+        log.info("Caught Null!!")
+        null
       } catch (e: ResourceNotFound) {
         null
       }
     }
       .filterValues { it != null }
 
+    log.info(">> Exporting ...")
     val securityGroups =
       coroutineScope {
         summaries.map { (region, summary) ->
           async {
             try {
+              log.info("$region security group using task")
               cloudDriverService.getSecurityGroup(
                 exportable.user,
                 exportable.account,
@@ -147,6 +153,7 @@ class SecurityGroupHandler(
               )
                 .toSecurityGroup()
             } catch (e: HttpException) {
+              log.info("exception: $e")
               if (e.isNotFound) {
                 null
               } else {
