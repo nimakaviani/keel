@@ -19,6 +19,8 @@ keel:
           unstable: xenialbase-unstable-x86_64-201904252133-ebs
           release: xenialbase-x86_64-201904041959-ebs
           previous: xenialbase-x86_64-201902202219-ebs
+    k8s:
+      enabled: true
     ec2:
       enabled: true
     deliveryConfig:

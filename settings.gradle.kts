@@ -35,6 +35,7 @@ include(
   "keel-docker",
   "keel-ec2-api",
   "keel-ec2-plugin",
+  "keel-k8s-plugin",
   "keel-echo",
   "keel-front50",
   "keel-igor",

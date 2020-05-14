@@ -40,7 +40,8 @@ private val DEFAULT_PROPS = mapOf(
 @SpringBootApplication(
   scanBasePackages = [
     "com.netflix.spinnaker.config",
-    "com.netflix.spinnaker.keel"
+    "com.netflix.spinnaker.keel",
+    "com.amazon.spinnaker.keel"
   ],
   exclude = [DataSourceAutoConfiguration::class]
 )

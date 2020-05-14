@@ -21,6 +21,7 @@ import com.netflix.spinnaker.keel.clouddriver.model.ApplicationLoadBalancerModel
 import com.netflix.spinnaker.keel.clouddriver.model.ClassicLoadBalancerModel
 import com.netflix.spinnaker.keel.clouddriver.model.Credential
 import com.netflix.spinnaker.keel.clouddriver.model.DockerImage
+import com.netflix.spinnaker.keel.clouddriver.model.K8sResourceModel
 import com.netflix.spinnaker.keel.clouddriver.model.NamedImage
 import com.netflix.spinnaker.keel.clouddriver.model.Network
 import com.netflix.spinnaker.keel.clouddriver.model.SecurityGroupModel
@@ -38,6 +39,13 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface CloudDriverService {
+  @GET("/k8s/{account}/{resource}")
+  suspend fun getK8sResource(
+    @Header("X-SPINNAKER-USER") user: String,
+    @Path("account") account: String,
+    @Path("resource") resource: String
+  ): K8sResourceModel
+
   @GET("/securityGroups/{account}/{type}/{region}/{securityGroupName}")
   suspend fun getSecurityGroup(
     @Header("X-SPINNAKER-USER") user: String,
