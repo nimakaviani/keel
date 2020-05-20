@@ -39,10 +39,11 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface CloudDriverService {
-  @GET("/k8s/{account}/{resource}")
+  @GET("/manifests/{account}/{location}/{resource}")
   suspend fun getK8sResource(
     @Header("X-SPINNAKER-USER") user: String,
     @Path("account") account: String,
+    @Path("location") location: String,
     @Path("resource") resource: String
   ): K8sResourceModel
 

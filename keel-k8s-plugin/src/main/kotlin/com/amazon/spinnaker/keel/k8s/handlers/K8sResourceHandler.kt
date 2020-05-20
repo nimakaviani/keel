@@ -1,54 +1,110 @@
 package com.amazon.spinnaker.keel.k8s.handlers
 
-import com.amazon.spinnaker.keel.config.K8S_RESOURCE_SPEC
-import com.amazon.spinnaker.keel.k8s.api.K8sResource
+import com.amazon.spinnaker.keel.config.K8S_RESOURCE_SPEC_V1
 import com.amazon.spinnaker.keel.k8s.api.K8sResourceSpec
 import com.netflix.spinnaker.keel.api.Resource
+import com.netflix.spinnaker.keel.api.ResourceDiff
+import com.netflix.spinnaker.keel.api.actuation.Task
+import com.netflix.spinnaker.keel.api.actuation.TaskLauncher
 import com.netflix.spinnaker.keel.api.plugins.Resolver
 import com.netflix.spinnaker.keel.api.plugins.ResourceHandler
+import com.netflix.spinnaker.keel.api.serviceAccount
 import com.netflix.spinnaker.keel.clouddriver.CloudDriverService
+import com.netflix.spinnaker.keel.clouddriver.model.K8sResourceModel
+import com.netflix.spinnaker.keel.model.Job
+import com.netflix.spinnaker.keel.retrofit.isNotFound
 import kotlinx.coroutines.coroutineScope
+import retrofit2.HttpException
 
 class K8sResournceHandler(
   private val cloudDriverService: CloudDriverService,
 //  private val cloudDriverCache: CloudDriverCache,
 //  private val orcaService: OrcaService,
-//  private val taskLauncher: TaskLauncher,
+  private val taskLauncher: TaskLauncher,
   resolvers: List<Resolver<*>>
-) : ResourceHandler<K8sResourceSpec, Any>(resolvers) {
+) : ResourceHandler<K8sResourceSpec, K8sResourceSpec>(resolvers) {
 
-  override val supportedKind = K8S_RESOURCE_SPEC
+  override val supportedKind = K8S_RESOURCE_SPEC_V1
 
-  override suspend fun toResolvedType(resource: Resource<K8sResourceSpec>): K8sResource =
-    with(resource.spec) {
-      K8sResource(
-        apiVersion = (((resource.spec as Map<String, Any?>)["apiVersion"]) as String),
-        kind = (((resource.spec as Map<String, Any?>)["kind"]) as String),
-        metadata = (resource.spec as Map<String, Any?>)["metadata"],
-        spec = ((resource.spec as Map<String, Any?>)["spec"] as Map<String, Any?>)
-      )
-    }
+  override suspend fun toResolvedType(resource: Resource<K8sResourceSpec>): K8sResourceSpec =
+    resource.spec
 
-  override suspend fun current(resource: Resource<K8sResourceSpec>): Any? =
+  override suspend fun current(resource: Resource<K8sResourceSpec>): K8sResourceSpec? =
     cloudDriverService.getK8sResource(
-      (((resource.spec as Map<String, Any?>)["apiVersion"]) as String),
-      (((resource.spec as Map<String, Any?>)["kind"]) as String)
+      resource.spec,
+      resource.metadata["account"] as String,
+      resource.serviceAccount
     )
 
   private suspend fun CloudDriverService.getK8sResource(
-    apiVersion: String,
-    kind: String
-  ): List<K8sResource> =
+    resource: K8sResourceSpec,
+    account: String,
+    serviceAccount: String
+  ): K8sResourceSpec? =
     coroutineScope {
         try {
-          listOf(K8sResource(
-            apiVersion = apiVersion,
-            kind = kind,
-            metadata = "random",
-            spec = mapOf(Pair(first = "random", second = "random"))
-          ))
-        } catch (e: Exception) {
-          throw e
+          getK8sResource(
+            serviceAccount,
+            account,
+            resource.location(),
+            resource.name()
+          ).toResourceModel()
+        } catch (e: HttpException) {
+          if (e.isNotFound) {
+            null
+          } else {
+            throw e
+          }
         }
     }
+
+  private fun K8sResourceModel.toResourceModel() =
+    K8sResourceSpec(
+      apiVersion = manifest.apiVersion,
+      kind = manifest.kind,
+      metadata = manifest.metadata,
+      spec = manifest.spec
+    )
+
+  override suspend fun upsert(
+    resource: Resource<K8sResourceSpec>,
+    diff: ResourceDiff<K8sResourceSpec>
+  ): List<Task> {
+
+    if (!diff.hasChanges()) {
+      return listOf<Task>()
+    }
+
+    val spec = (diff.desired)
+    val account = (resource.metadata["account"] as String)
+
+    return listOf(
+      taskLauncher.submitJob(
+        resource = resource,
+        description = "something",
+        correlationId = spec.name(),
+        job = spec.job(account)
+      )
+    )
+  }
+
+  private fun K8sResourceSpec.job(account: String): Job =
+    Job(
+      "deployManifest",
+      mapOf(
+        "moniker" to mapOf(
+          "app" to "some-name",
+          "location" to location()
+        ),
+        "name" to "some-name",
+        "application" to application,
+        "cloudProvider" to "kubernetes",
+        "credentials" to account,
+        "manifests" to listOf(this.resource()),
+        "optionalArtifacts" to listOf<Map<Object, Object>>(),
+        "requiredArtifacts" to listOf<Map<String, Any?>>(),
+        "source" to "text",
+        "enableTraffic" to "true"
+      )
+    )
 }

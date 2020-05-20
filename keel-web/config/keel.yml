@@ -8,7 +8,7 @@ keel:
     frequency: PT1M
   plugins:
     bakery:
-      enabled: false
+      enabled: true
       baseImages:
         bionic:
           candidate: bionicbase-x86_64-201904232145-ebs
