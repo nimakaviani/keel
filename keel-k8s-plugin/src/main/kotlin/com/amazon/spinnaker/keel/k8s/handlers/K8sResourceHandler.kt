@@ -1,11 +1,14 @@
 package com.amazon.spinnaker.keel.k8s.handlers
 
+import com.amazon.spinnaker.keel.config.K8S_PROVIDER
 import com.amazon.spinnaker.keel.config.K8S_RESOURCE_SPEC_V1
+import com.amazon.spinnaker.keel.config.SOURCE_TYPE
 import com.amazon.spinnaker.keel.k8s.api.K8sResourceSpec
 import com.netflix.spinnaker.keel.api.Resource
 import com.netflix.spinnaker.keel.api.ResourceDiff
 import com.netflix.spinnaker.keel.api.actuation.Task
 import com.netflix.spinnaker.keel.api.actuation.TaskLauncher
+import com.netflix.spinnaker.keel.api.application
 import com.netflix.spinnaker.keel.api.plugins.Resolver
 import com.netflix.spinnaker.keel.api.plugins.ResourceHandler
 import com.netflix.spinnaker.keel.api.serviceAccount
@@ -27,7 +30,12 @@ class K8sResournceHandler(
   override val supportedKind = K8S_RESOURCE_SPEC_V1
 
   override suspend fun toResolvedType(resource: Resource<K8sResourceSpec>): K8sResourceSpec =
-    resource.spec
+    K8sResourceSpec(
+      apiVersion = resource.spec.apiVersion,
+      kind = resource.spec.kind,
+      spec = resource.spec.spec,
+      metadata = resource.spec.metadata
+    )
 
   override suspend fun current(resource: Resource<K8sResourceSpec>): K8sResourceSpec? =
     cloudDriverService.getK8sResource(
@@ -81,30 +89,29 @@ class K8sResournceHandler(
     return listOf(
       taskLauncher.submitJob(
         resource = resource,
-        description = "something",
+        description = "k8s resource: ${spec.name()} ",
         correlationId = spec.name(),
-        job = spec.job(account)
+        job = spec.job(resource.application, account)
       )
     )
   }
 
-  private fun K8sResourceSpec.job(account: String): Job =
+  private fun K8sResourceSpec.job(app: String, account: String): Job =
     Job(
       "deployManifest",
       mapOf(
         "moniker" to mapOf(
-          "app" to "some-name",
+          "app" to app,
           "location" to location()
         ),
-        "name" to "some-name",
-        "application" to application,
-        "cloudProvider" to "kubernetes",
+        "application" to app,
+        "cloudProvider" to K8S_PROVIDER,
         "credentials" to account,
         "manifests" to listOf(this.resource()),
         "optionalArtifacts" to listOf<Map<Object, Object>>(),
         "requiredArtifacts" to listOf<Map<String, Any?>>(),
-        "source" to "text",
-        "enableTraffic" to "true"
+        "source" to SOURCE_TYPE,
+        "enableTraffic" to true.toString()
       )
     )
 }
