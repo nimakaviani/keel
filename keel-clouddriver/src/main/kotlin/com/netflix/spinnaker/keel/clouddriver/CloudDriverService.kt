@@ -42,6 +42,7 @@ interface CloudDriverService {
   @GET("/manifests/{account}/{location}/{resource}")
   suspend fun getK8sResource(
     @Header("X-SPINNAKER-USER") user: String,
+    @Header("X-SPINNAKER-ACCOUNTS") acc: String,
     @Path("account") account: String,
     @Path("location") location: String,
     @Path("resource") resource: String

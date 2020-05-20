@@ -8,7 +8,6 @@ import com.netflix.spinnaker.keel.api.Resource
 import com.netflix.spinnaker.keel.api.ResourceDiff
 import com.netflix.spinnaker.keel.api.actuation.Task
 import com.netflix.spinnaker.keel.api.actuation.TaskLauncher
-import com.netflix.spinnaker.keel.api.application
 import com.netflix.spinnaker.keel.api.plugins.Resolver
 import com.netflix.spinnaker.keel.api.plugins.ResourceHandler
 import com.netflix.spinnaker.keel.api.serviceAccount
@@ -54,6 +53,7 @@ class K8sResournceHandler(
           getK8sResource(
             serviceAccount,
             account,
+            account,
             resource.location(),
             resource.name()
           ).toResourceModel()
@@ -89,9 +89,9 @@ class K8sResournceHandler(
     return listOf(
       taskLauncher.submitJob(
         resource = resource,
-        description = "k8s resource: ${spec.name()} ",
+        description = "applying k8s resource: ${spec.name()} ",
         correlationId = spec.name(),
-        job = spec.job(resource.application, account)
+        job = spec.job((resource.metadata["application"] as String), account)
       )
     )
   }
@@ -104,7 +104,6 @@ class K8sResournceHandler(
           "app" to app,
           "location" to location()
         ),
-        "application" to app,
         "cloudProvider" to K8S_PROVIDER,
         "credentials" to account,
         "manifests" to listOf(this.resource()),

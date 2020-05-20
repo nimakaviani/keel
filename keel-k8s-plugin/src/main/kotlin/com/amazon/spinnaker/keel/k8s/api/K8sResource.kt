@@ -11,11 +11,14 @@ data class K8sResourceSpec(
   val metadata: Map<String, Any?>
 ) : ResourceSpec {
 
+  private val namespace = metadata["namespace"] ?: "default"
+  private val annotations = metadata["annotations"]
+  private val appName = if (annotations != null) ((metadata["annotations"] as Map<String, String>)["app"]) else null
   override val application: String
-    get() = "test" // $apiVersion/$kind"
+    get() = (appName ?: "$namespace-$kind-${metadata["name"]}")
 
   override val id: String
-    get() = "teet" // $apiVersion/$kind/${((spec["metadata"] as Map<String, Any?>)["name"] as String)}"
+    get() = (appName ?: "$namespace-$kind-${metadata["name"]}")
 
   fun location(): String {
     return metadata["namespace"]?.toString() ?: "default"
