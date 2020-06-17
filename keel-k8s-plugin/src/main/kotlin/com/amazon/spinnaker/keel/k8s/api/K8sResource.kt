@@ -18,7 +18,7 @@ data class K8sResourceSpec(
     get() = (appName ?: "$namespace-$kind-${metadata["name"]}")
 
   override val id: String
-    get() = if (appName != null) "$appName-$kind" else "$namespace-$kind-${metadata["name"]}"
+    get() = "$namespace-$kind-${metadata["name"]}"
 
   fun location(): String {
     return metadata["namespace"]?.toString() ?: "default"
