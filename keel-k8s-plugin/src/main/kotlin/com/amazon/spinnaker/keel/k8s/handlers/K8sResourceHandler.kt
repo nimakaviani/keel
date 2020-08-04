@@ -33,13 +33,14 @@ class K8sResournceHandler(
       apiVersion = resource.spec.apiVersion,
       kind = resource.spec.kind,
       spec = resource.spec.spec,
+      locations = resource.spec.locations,
       metadata = resource.spec.metadata
     )
 
   override suspend fun current(resource: Resource<K8sResourceSpec>): K8sResourceSpec? =
     cloudDriverService.getK8sResource(
       resource.spec,
-      resource.metadata["account"] as String,
+      resource.spec.locations.account,
       resource.serviceAccount
     )
 
@@ -71,7 +72,8 @@ class K8sResournceHandler(
       apiVersion = manifest.apiVersion,
       kind = manifest.kind,
       metadata = manifest.metadata,
-      spec = manifest.spec
+      spec = manifest.spec,
+      locations = manifest.locations
     )
 
   override suspend fun upsert(
@@ -84,7 +86,7 @@ class K8sResournceHandler(
     }
 
     val spec = (diff.desired)
-    val account = (resource.metadata["account"] as String)
+    val account = resource.spec.locations.account
 
     return listOf(
       taskLauncher.submitJob(
