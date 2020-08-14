@@ -4,7 +4,7 @@ import com.netflix.spinnaker.keel.api.Locatable
 import com.netflix.spinnaker.keel.api.ResourceSpec
 import com.netflix.spinnaker.keel.api.SimpleLocations
 
-typealias SpecType = Map<String, Any?>
+typealias SpecType = MutableMap<String, Any?>
 
 data class K8sResourceSpec(
   val apiVersion: String,
@@ -31,8 +31,10 @@ data class K8sResourceSpec(
     return metadata["namespace"]?.toString() ?: "default"
   }
 
-  fun resource(): K8sResource =
-    K8sResource(apiVersion, kind, metadata, spec)
+  fun resource(): K8sResource {
+    val cleanSpec = spec.filterNot { it.key == "location" }
+    return K8sResource(apiVersion, kind, metadata, cleanSpec as SpecType)
+  }
 }
 
 data class K8sResource(

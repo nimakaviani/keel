@@ -4,12 +4,13 @@ import com.amazon.spinnaker.keel.config.K8S_PROVIDER
 import com.amazon.spinnaker.keel.config.K8S_RESOURCE_SPEC_V1
 import com.amazon.spinnaker.keel.config.SOURCE_TYPE
 import com.amazon.spinnaker.keel.k8s.api.K8sResourceSpec
+import com.amazon.spinnaker.keel.k8s.api.SpecType
 import com.netflix.spinnaker.keel.api.Resource
 import com.netflix.spinnaker.keel.api.ResourceDiff
 import com.netflix.spinnaker.keel.api.actuation.Task
 import com.netflix.spinnaker.keel.api.actuation.TaskLauncher
+import com.netflix.spinnaker.keel.api.plugins.ResolvableResourceHandler
 import com.netflix.spinnaker.keel.api.plugins.Resolver
-import com.netflix.spinnaker.keel.api.plugins.ResourceHandler
 import com.netflix.spinnaker.keel.api.serviceAccount
 import com.netflix.spinnaker.keel.clouddriver.CloudDriverService
 import com.netflix.spinnaker.keel.clouddriver.model.K8sResourceModel
@@ -24,7 +25,7 @@ class K8sResournceHandler(
 //  private val orcaService: OrcaService,
   private val taskLauncher: TaskLauncher,
   resolvers: List<Resolver<*>>
-) : ResourceHandler<K8sResourceSpec, K8sResourceSpec>(resolvers) {
+) : ResolvableResourceHandler<K8sResourceSpec, K8sResourceSpec>(resolvers) {
 
   override val supportedKind = K8S_RESOURCE_SPEC_V1
 
@@ -42,6 +43,15 @@ class K8sResournceHandler(
       resource.spec,
       resource.spec.locations.account,
       resource.serviceAccount
+    )
+
+  override suspend fun desired(resource: Resource<K8sResourceSpec>): K8sResourceSpec =
+    K8sResourceSpec(
+      apiVersion = resource.spec.apiVersion,
+      kind = resource.spec.kind,
+      spec = resource.spec.spec,
+      locations = resource.spec.locations,
+      metadata = resource.spec.metadata
     )
 
   private suspend fun CloudDriverService.getK8sResource(
@@ -72,7 +82,7 @@ class K8sResournceHandler(
       apiVersion = manifest.apiVersion,
       kind = manifest.kind,
       metadata = manifest.metadata,
-      spec = manifest.spec,
+      spec = manifest.spec as SpecType,
       locations = manifest.locations
     )
 
